@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react'; 
 
 export default function Home() {
-
   const [formData, setFormData] = useState({
     nombre: "",
     email: "",
@@ -12,8 +11,10 @@ export default function Home() {
     area: "",
     resumen: ""
   });
-
+  
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [enviado, setEnviado] = useState(false);
 
   const areasLegales = [
     { id: "corporativo", label: "Derecho Corporativo" },
@@ -29,10 +30,44 @@ export default function Home() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); 
-    console.log("Datos listos para el backend:", formData);
-    alert("¡Datos capturados con éxito! Revisá la consola.");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.area) {
+      alert("Por favor seleccione un área legal.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/contacto", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        throw new Error("Error en la respuesta del servidor");
+      }
+
+      setEnviado(true);
+      setFormData({
+        nombre: "",
+        email: "",
+        telefono: "",
+        area: "",
+        resumen: ""
+      });
+
+    } catch (error) {
+      console.error("Error al enviar el formulario:", error);
+      alert("Hubo un problema al enviar su consulta. Intente nuevamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,8 +93,6 @@ export default function Home() {
       </nav>
 
       <main className="pt-20">
-
-        {/* Hero Section */}
         <section className="relative min-h-[90vh] flex items-center bg-surface-container-lowest border-b border-outline overflow-hidden">
           <div className="absolute inset-0 w-full h-full">
             <img 
@@ -84,7 +117,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
         <section className="py-section-gap bg-background border-b border-outline" id="practice-areas">
           <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
@@ -180,100 +212,118 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-background p-8 border border-outline brutalist-shadow mt-10 lg:mt-0">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block font-label-caps text-label-caps text-primary mb-2">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                    placeholder="Ej. Juan Pérez" 
-                    required 
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block font-label-caps text-label-caps text-primary mb-2">Email</label>
-                    <input 
-                      type="email" 
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                      placeholder="correo@ejemplo.com" 
-                      required 
-                    />
+            <div className="bg-background p-8 border border-outline brutalist-shadow mt-10 lg:mt-0 flex flex-col justify-center">
+              {enviado ? (
+                <div className="text-center py-10 animation-fade-in">
+                  <div className="inline-block border-2 border-primary p-4 rounded-full mb-6 brutalist-shadow bg-surface-container-lowest">
+                    <span className="material-symbols-outlined text-6xl text-primary block">check_circle</span>
                   </div>
-                  <div>
-                    <label className="block font-label-caps text-label-caps text-primary mb-2">Teléfono</label>
-                    <input 
-                      type="tel" 
-                      name="telefono"
-                      value={formData.telefono}
-                      onChange={handleChange}
-                      className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                      placeholder="+54 9 11 2345 6789" 
-                      required 
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block font-label-caps text-label-caps text-primary mb-2">Área Legal</label>
-                  <div className="relative">
-                  <label className="block font-label-caps text-label-caps text-primary mb-2">Área Legal</label>
-                  <div 
-                    onClick={() => setIsSelectOpen(!isSelectOpen)}
-                    className="w-full bg-surface-container-lowest border border-outline p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors"
+                  <h3 className="font-headline-md text-headline-md text-primary mb-4">¡Consulta Enviada!</h3>
+                  <p className="font-body-lg text-body-lg text-on-surface-variant mb-8 max-w-sm mx-auto">
+                    Hemos recibido su caso con éxito. Nuestro equipo lo revisará y se pondrá en contacto a la brevedad.
+                  </p>
+                  <button 
+                    onClick={() => setEnviado(false)}
+                    className="bg-surface-container-lowest text-primary font-label-caps text-label-caps px-8 py-4 uppercase tracking-widest hover:bg-surface-container-low transition-colors duration-200 border border-primary brutalist-shadow inline-block"
                   >
-                    <span className={formData.area ? "text-primary" : "text-gray-500"}>
-                      {formData.area ? areasLegales.find(a => a.id === formData.area)?.label : "Seleccione un área..."}
-                    </span>
-                    <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: isSelectOpen ? 'rotate(180deg)' : 'none' }}>
-                      expand_more
-                    </span>
+                    Enviar nueva consulta
+                  </button>
+                </div>
+                 ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block font-label-caps text-label-caps text-primary mb-2">Nombre Completo</label>
+                    <input 
+                      type="text" 
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
+                      placeholder="Ej. Juan Pérez" 
+                      required 
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block font-label-caps text-label-caps text-primary mb-2">Email</label>
+                      <input 
+                        type="email" 
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
+                        placeholder="correo@ejemplo.com" 
+                        required 
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-label-caps text-label-caps text-primary mb-2">Teléfono</label>
+                      <input 
+                        type="tel" 
+                        name="telefono"
+                        value={formData.telefono}
+                        onChange={handleChange}
+                        className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
+                        placeholder="+54 9 11 2345 6789" 
+                        required 
+                      />
+                    </div>
                   </div>
 
-                  {isSelectOpen && (
-                    <ul className="absolute z-50 w-full mt-1 bg-surface-container-lowest border border-outline brutalist-shadow">
-                      {areasLegales.map((area) => (
-                        <li 
-                          key={area.id}
-                          onClick={() => {
-                            setFormData({ ...formData, area: area.id });
-                            setIsSelectOpen(false); 
-                          }}
-                          className="p-3 cursor-pointer hover:bg-primary hover:text-white transition-colors duration-200"
-                        >
-                          {area.label}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                </div>
+                  <div className="relative">
+                    <label className="block font-label-caps text-label-caps text-primary mb-2">Área Legal</label>
+                    <div 
+                      onClick={() => setIsSelectOpen(!isSelectOpen)}
+                      className="w-full bg-surface-container-lowest border border-outline p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors"
+                    >
+                      <span className={formData.area ? "text-primary" : "text-gray-500"}>
+                        {formData.area ? areasLegales.find(a => a.id === formData.area)?.label : "Seleccione un área..."}
+                      </span>
+                      <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: isSelectOpen ? 'rotate(180deg)' : 'none' }}>
+                        expand_more
+                      </span>
+                    </div>
 
-                <div>
-                  <label className="block font-label-caps text-label-caps text-primary mb-2">Resumen del Caso</label>
-                  <textarea 
-                    name="resumen"
-                    value={formData.resumen}
-                    onChange={handleChange}
-                    rows={4} 
-                    className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none" 
-                    placeholder="Describa brevemente su situación..." 
-                    required
-                  ></textarea>
-                </div>
+                    {isSelectOpen && (
+                      <ul className="absolute z-50 w-full mt-1 bg-surface-container-lowest border border-outline brutalist-shadow">
+                        {areasLegales.map((area) => (
+                          <li 
+                            key={area.id}
+                            onClick={() => {
+                              setFormData({ ...formData, area: area.id });
+                              setIsSelectOpen(false);
+                            }}
+                            className="p-3 cursor-pointer hover:bg-primary hover:text-white transition-colors duration-200"
+                          >
+                            {area.label}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
-                <button type="submit" className="w-full bg-primary text-on-primary font-label-caps text-label-caps px-8 py-4 uppercase tracking-widest hover:bg-surface-tint transition-colors duration-200 border border-primary brutalist-shadow">
-                  Enviar Consulta
-                </button>
-              </form>
+                  <div>
+                    <label className="block font-label-caps text-label-caps text-primary mb-2">Resumen del Caso</label>
+                    <textarea 
+                      name="resumen"
+                      value={formData.resumen}
+                      onChange={handleChange}
+                      rows={4} 
+                      className="w-full bg-surface-container-lowest border border-outline p-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none" 
+                      placeholder="Describa brevemente su situación..." 
+                      required
+                    ></textarea>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-primary text-on-primary font-label-caps text-label-caps px-8 py-4 uppercase tracking-widest hover:bg-surface-tint transition-colors duration-200 border border-primary brutalist-shadow disabled:opacity-50 cursor-pointer"
+                  >
+                    {loading ? "Enviando..." : "Enviar Consulta"}
+                  </button>
+                </form>
+              )}
             </div>
 
           </div>
