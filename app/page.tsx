@@ -41,7 +41,8 @@ export default function Home() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/contacto", {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+      const response = await fetch(backendUrl + "/api/contacto", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
